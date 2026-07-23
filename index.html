@@ -76,6 +76,26 @@
       <p id="merge-status" class="status" role="status"></p>
     </section>
 
+
+  <!-- ============ PDF TO WORD ============ -->
+  <section id="panel-pdf2word" class="panel" role="tabpanel">
+    <div class="dropzone" id="pdf2word-dropzone">
+      <input type="file" id="pdf2word-input" accept="application/pdf,.pdf" hidden />
+      <p class="dz-icon">📝</p>
+      <p>Drop PDF here or <button class="link-btn">browse</button></p>
+      <p class="dz-hint">Convert PDF to editable Word (.docx)</p>
+ </div>
+    <div class="actions hidden" id="pdf2word-actions">
+      <button id="pdf2word-btn" class="btn primary">
+        Convert to Word
+      </button>
+      <button id="pdf2word-clear" class="btn ghost">
+        Clear
+      </button>
+ </div>
+ <p id="pdf2word-status" class="status"></p>
+</section>
+
     <!-- ============ SPLIT ============ -->
     <!--
     <section id="panel-split" class="panel" role="tabpanel">
@@ -495,6 +515,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@cantoo/pdf-lib@2.5.3/dist/pdf-lib.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+  <script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="js/common.js"></script>
   <script src="js/merge.js"></script>
   <script src="js/split.js"></script>
@@ -508,5 +531,6 @@
   <script src="js/protect.js"></script>
   <script src="js/metadata.js"></script>
   <script src="js/addimage.js"></script>
+  <script src="js/pdf2word.js"></script>
 </body>
 </html>
