@@ -13,286 +13,199 @@ const status = document.getElementById('pdf2word-status');
 
 if (!input) return;
 
-dropzone.querySelector('.link-btn')
-.addEventListener('click', (e) => {
-  e.stopPropagation();
-  input.click();
-});
+function setStatus(text) {
+    status.textContent = text;
+}
 
 dropzone.addEventListener('click', () => {
-  input.click();
+    input.click();
+});
+
+dropzone.querySelector('.link-btn')
+.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    input.click();
 });
 
 input.addEventListener('change', () => {
 
-  const file = input.files[0];
+    const file = input.files[0];
 
-  if (!file) return;
+    if (!file) return;
 
-  if (
-    file.type !== 'application/pdf' &&
-    !file.name.toLowerCase().endsWith('.pdf')
-  ) {
-    status.textContent = 'Please choose PDF file.';
-    return;
-  }
+    pdfFile = file;
 
-  pdfFile = file;
+    actions.classList.remove('hidden');
 
-  actions.classList.remove('hidden');
-
-  status.textContent =
-    `Selected: ${file.name}`;
+    setStatus(file.name);
 });
 
 dropzone.addEventListener('dragover', (e) => {
-  e.preventDefault();
+    e.preventDefault();
 });
 
 dropzone.addEventListener('drop', (e) => {
 
-  e.preventDefault();
+    e.preventDefault();
 
-  const file =
-    e.dataTransfer.files[0];
+    const file =
+        e.dataTransfer.files[0];
 
-  if (!file) return;
+    if (!file) return;
 
-  pdfFile = file;
+    pdfFile = file;
 
-  actions.classList.remove('hidden');
+    actions.classList.remove('hidden');
 
-  status.textContent =
-    `Selected: ${file.name}`;
+    setStatus(file.name);
 });
 
 clearBtn.addEventListener('click', () => {
 
-  pdfFile = null;
+    pdfFile = null;
 
-  input.value = '';
+    input.value = '';
 
-  actions.classList.add('hidden');
+    actions.classList.add('hidden');
 
-  status.textContent = '';
+    setStatus('');
 });
 
-convertBtn.addEventListener('click', convertPdf);
+convertBtn.addEventListener('click', convertPdfToWord);
 
-async function convertPdf() {
+async function convertPdfToWord() {
 
-try {
-
-  if (!pdfFile) return;
-
-  convertBtn.disabled = true;
-
-  status.textContent =
-    'Loading PDF...';
-
-  const buffer =
-    await pdfFile.arrayBuffer();
-
-  const pdf =
-    await pdfjsLib.getDocument({
-      data: buffer
-    }).promise;
-
-  const children = [];
-
-  for (
-    let pageNum = 1;
-    pageNum <= pdf.numPages;
-    pageNum++
-  ) {
-
-    status.textContent =
-      `Processing page ${pageNum}/${pdf.numPages}`;
-
-    const page =
-      await pdf.getPage(pageNum);
-
-    const viewport =
-      page.getViewport({
-        scale: 2
-      });
-
-    const canvas =
-      document.createElement('canvas');
-
-    const ctx =
-      canvas.getContext('2d');
-
-    canvas.width =
-      viewport.width;
-
-    canvas.height =
-      viewport.height;
-
-    await page.render({
-      canvasContext: ctx,
-      viewport
-    }).promise;
-
-    const imageData =
-      canvas.toDataURL(
-        'image/jpeg',
-        0.95
-      );
-
-    const imageBytes =
-      dataURLToUint8Array(
-        imageData
-      );
-
-    const image =
-      new docx.ImageRun({
-        data: imageBytes,
-        transformation: {
-          width: 520,
-          height:
-            Math.round(
-              520 *
-              canvas.height /
-              canvas.width
-            )
-        }
-      });
-
-    children.push(
-      new docx.Paragraph({
-        children: [image]
-      })
-    );
-
-    let extractedText = '';
+    if (!pdfFile) return;
 
     try {
 
-      const textContent =
-        await page.getTextContent();
+        convertBtn.disabled = true;
 
-      extractedText =
-        textContent.items
-        .map(
-          item => item.str
-        )
-        .join(' ');
+        setStatus('Loading PDF...');
 
-      if (
-        extractedText.trim().length <
-        20
-      ) {
+        const buffer =
+            await pdfFile.arrayBuffer();
 
-        status.textContent =
-          `OCR page ${pageNum}`;
+        const pdf =
+            await pdfjsLib.getDocument({
+                data: buffer
+            }).promise;
 
-        const result =
-          await Tesseract.recognize(
-            canvas,
-            'eng+ind'
-          );
+        const children = [];
 
-        extractedText =
-          result.data.text;
-      }
+        for (
+            let pageNum = 1;
+            pageNum <= pdf.numPages;
+            pageNum++
+        ) {
 
-    } catch (err) {
+            setStatus(
+                `Rendering page ${pageNum}/${pdf.numPages}`
+            );
 
-      console.error(err);
-    }
+            const page =
+                await pdf.getPage(pageNum);
 
-    if (
-      extractedText.trim()
-    ) {
+            const viewport =
+                page.getViewport({
+                    scale: 2.5
+                });
 
-      children.push(
-        new docx.Paragraph({
-          text: extractedText
-        })
-      );
-    }
+            const canvas =
+                document.createElement('canvas');
 
-    if (
-      pageNum <
-      pdf.numPages
-    ) {
+            const ctx =
+                canvas.getContext('2d');
 
-      children.push(
-        new docx.Paragraph({
-          pageBreakBefore: true
-        })
-      );
-    }
-  }
+            canvas.width =
+                viewport.width;
 
-  status.textContent =
-    'Generating DOCX...';
+            canvas.height =
+                viewport.height;
 
-  const doc =
-    new docx.Document({
-      sections: [
-        {
-          children
+            await page.render({
+                canvasContext: ctx,
+                viewport
+            }).promise;
+
+            const blob =
+                await new Promise(resolve =>
+                    canvas.toBlob(
+                        resolve,
+                        'image/png'
+                    )
+                );
+
+            const imageBuffer =
+                await blob.arrayBuffer();
+
+            const image = new docx.ImageRun({
+                data: imageBuffer,
+                transformation: {
+                    width: 550,
+                    height: Math.round(
+                        550 *
+                        canvas.height /
+                        canvas.width
+                    )
+                }
+            });
+
+            children.push(
+                new docx.Paragraph({
+                    children: [image]
+                })
+            );
+
+            if (pageNum < pdf.numPages) {
+
+                children.push(
+                    new docx.Paragraph({
+                        pageBreakBefore: true
+                    })
+                );
+
+            }
         }
-      ]
-    });
 
-  const blob =
-    await docx.Packer.toBlob(
-      doc
-    );
+        setStatus('Building DOCX...');
 
-  saveAs(
-    blob,
-    pdfFile.name.replace(
-      /\.pdf$/i,
-      '.docx'
-    )
-  );
+        const doc =
+            new docx.Document({
+                sections: [{
+                    children
+                }]
+            });
 
-  status.textContent =
-    'Done.';
+        const docBlob =
+            await docx.Packer.toBlob(doc);
 
-}
-catch(error) {
+        saveAs(
+            docBlob,
+            pdfFile.name.replace(
+                /\.pdf$/i,
+                '.docx'
+            )
+        );
 
-  console.error(error);
+        setStatus(
+            'Finished.'
+        );
 
-  status.textContent =
-    'Conversion failed.';
-}
-finally {
+    }
+    catch (err) {
 
-  convertBtn.disabled = false;
-}
+        console.error(err);
 
-}
+        setStatus(
+            'Conversion failed.'
+        );
+    }
+    finally {
 
-function dataURLToUint8Array(
-  dataURL
-) {
-
-  const binary =
-    atob(
-      dataURL.split(',')[1]
-    );
-
-  const bytes =
-    new Uint8Array(
-      binary.length
-    );
-
-  for (
-    let i = 0;
-    i < binary.length;
-    i++
-  ) {
-    bytes[i] =
-      binary.charCodeAt(i);
-  }
-
-  return bytes;
+        convertBtn.disabled = false;
+    }
 }
 
 })();
